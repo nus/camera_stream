@@ -1,0 +1,48 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title></title>
+  <script>
+var video_elem = null;
+var ws_host = 'ws://127.0.0.1:8080'
+
+function startCapture() {
+  navigator.webkitGetUserMedia({video: true} , function(stream) {
+    video_elem = document.querySelector('#camera-video');
+    video_elem.src = URL.createObjectURL(stream);
+  }, function() {
+    console.log('failed');
+  });
+};
+
+function sendToStream() {
+  var ws = new WebSocket(ws_host + '/capturing');
+  setInterval(function() {
+    var cvns = document.querySelector('#invisible-canvas');
+    var ctx = cvns.getContext('2d');
+    ctx.drawImage(video_elem, 0, 0, cvns.width, cvns.height);
+    ws.send(cvns.toDataURL('image/png'))
+  }, 1000);
+};
+
+function receiveFromStream() {
+  var strea_out = document.querySelector('#stream-out');
+  var ws = new WebSocket(ws_host + '/stream');
+  ws.onmessage = function(e) {
+    strea_out.src = e.data;
+  };
+}
+  </script>
+</head>
+<body>
+  <a href="/capturing">/capturing</a><br>
+  <a href="/stream">/stream</a>
+  <input type="button" value="capture from camera" onclick="startCapture();" /><br>
+  <video id="camera-video" autoplay="1"></video><br>
+  <canvas id="invisible-canvas" width="640" height="480"></canvas><br>
+  <input type="button" value="send to stream" onclick="sendToStream();" /><br>
+  <img id="stream-out"></img><br>
+  <input type="button" value="receive from stream" onclick="receiveFromStream()"><br>
+</body>
+</html>
